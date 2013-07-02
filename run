@@ -1,0 +1,32 @@
+#!/bin/sh
+if [ "$1" == "-dbg" ] || [ "$2" == "-dbg" ]; then
+  JAVA_OPTS="$JAVA_OPTS -agentpath:/opt/yourkit/bin/linux-x86-64/libyjpagent.so \
+  -XX:HeapDumpPath=/data/heapdumps/thruput \
+  -XX:+HeapDumpOnOutOfMemoryError"
+fi
+
+if [ "$1" == "-gc" ] || [ "$2" == "-gc" ]; then
+  JAVA_OPTS="$JAVA_OPTS \
+  -XX:+PrintGCDetails -XX:+PrintGCDateStamps \
+  -XX:+PrintGCApplicationStoppedTime \
+  -XX:+PrintGCApplicationConcurrentTime \
+  -Xloggc:/data/logs/thruput.gc.log -verbose:gc"
+fi
+
+java -ea -server $JAVA_OPTS           \
+  -XX:+AggressiveOpts                 \
+  -XX:+OptimizeStringConcat           \
+  -XX:+UseParNewGC                    \
+  -XX:+UseConcMarkSweepGC             \
+  -XX:+CMSParallelRemarkEnabled       \
+  -XX:+CMSClassUnloadingEnabled       \
+  -XX:SurvivorRatio=128               \
+  -XX:MaxTenuringThreshold=0          \
+  -Xss8M                              \
+  -Xms128M                            \
+  -Xmx512M                            \
+  -Dio.netty.epollBugWorkaround=true  \
+  -Dconfig.file=src/main/resources/reference.conf \
+  -Dlogback.configurationFile=src/main/resources/logback.xml \
+  -jar target/thruput-$( cat version ).jar
+
