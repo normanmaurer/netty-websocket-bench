@@ -51,7 +51,8 @@ object ServerHandler extends SimpleChannelInboundHandler[Object] with Logger {
   private def handleHttp(ctx: ChannelHandlerContext, req: FullHttpRequest) {
     if (!req.getDecoderResult.isSuccess) {
       val f = ctx.channel().write(new HttpResponseStatus(400, "Bad Request (unable to decode)"))
-      return f.addListener(ChannelFutureListener.CLOSE)
+      f.addListener(ChannelFutureListener.CLOSE)
+      return
     }
 
     val headers = OurHttpHeaders.get(req)
@@ -59,7 +60,8 @@ object ServerHandler extends SimpleChannelInboundHandler[Object] with Logger {
     if (headers.get("Upgrade").getOrElse("").toLowerCase != "websocket") {
       debug("Not a WebSocket Request")
       val f = ctx.channel().write(new HttpResponseStatus(400, "Bad Request (no websocket upgrade header)"))
-      return f.addListener(ChannelFutureListener.CLOSE)
+      f.addListener(ChannelFutureListener.CLOSE)
+      return
     }
 
     debug("Upgrading to WebSockets upon client request! " + ctx.channel().id())
@@ -70,7 +72,7 @@ object ServerHandler extends SimpleChannelInboundHandler[Object] with Logger {
     val location = proto + "://" + req.headers.get(HttpHeaders.Names.HOST) + "/"
     val factory = new WebSocketServerHandshakerFactory(location, null, false)
     val handshaker: WebSocketServerHandshaker = factory.newHandshaker(req)
-    if (handshaker != null) handshaker.handshake(ctx.channel(), req.retain)
+    if (handshaker != null) handshaker.handshake(ctx.channel(), req)
     else WebSocketServerHandshakerFactory.sendUnsupportedWebSocketVersionResponse(ctx.channel())
   }
 }
